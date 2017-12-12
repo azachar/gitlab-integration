@@ -7,6 +7,11 @@ log = require './log'
 
 class GitlabIntegration
     config:
+        server:
+            title: 'Gitlab server'
+            description: 'URL of your gitlab server (do not add / in the end)'
+            type: 'string'
+            default: 'https://gitlab.com'
         token:
             title: 'Gitlab API token'
             description: 'Token to access your Gitlab API'
@@ -126,6 +131,11 @@ class GitlabIntegration
         if not atom.config.get('gitlab-integration.token')
             atom.notifications.addInfo(
                 "You likely forgot to configure your gitlab token",
+                {dismissable: true}
+            )
+        if not atom.config.get('gitlab-integration.server')
+            atom.notifications.addInfo(
+                "You likely forgot to configure your gitlab server url",
                 {dismissable: true}
             )
         @handleProjects(atom.project.getDirectories())

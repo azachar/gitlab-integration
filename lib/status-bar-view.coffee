@@ -54,13 +54,15 @@ class StatusBarView extends HTMLElement
     loading: (project, message) =>
         log "project #{project} loading with status '#{message}'"
         @statuses[project] = message
+        server = atom.config.get('gitlab-integration.server')
         if @currentProject is project
             @show()
             @disposeTooltips()
             status = document.createElement('div')
             status.classList.add('inline-block')
-            icon = document.createElement('span')
+            icon = document.createElement('a')
             icon.classList.add('icon', 'icon-gitlab')
+            icon.href = "#{server}/#{project}/pipelines/"
             @tooltips.push atom.tooltips.add icon, {
                 title: "GitLab project #{project}"
             }
@@ -85,8 +87,10 @@ class StatusBarView extends HTMLElement
         @disposeTooltips()
         status = document.createElement('div')
         status.classList.add('inline-block')
-        icon = document.createElement('span')
+        icon = document.createElement('a')
         icon.classList.add('icon', 'icon-gitlab')
+        server = atom.config.get('gitlab-integration.server')
+        icon.href = "#{server}/#{project}/pipelines"
         @tooltips.push atom.tooltips.add icon, {
             title: "GitLab project #{project}"
         }
@@ -99,25 +103,12 @@ class StatusBarView extends HTMLElement
             }
             status.appendChild e
         else
+            icon.href = "#{server}/#{project}/pipelines/#{stages[0].pipeline}"
             stages.forEach((stage) =>
-                e = document.createElement('span')
-                switch
-                    when stage.status is 'success'
-                        e.classList.add('icon', 'gitlab-success')
-                    when stage.status is 'failed'
-                        e.classList.add('icon', 'gitlab-failed')
-                    when stage.status is 'running'
-                        e.classList.add('icon', 'gitlab-running')
-                    when stage.status is 'pending'
-                        e.classList.add('icon', 'gitlab-pending')
-                    when stage.status is 'skipped'
-                        e.classList.add('icon', 'gitlab-skipped')
-                    when stage.status is 'canceled'
-                        e.classList.add('icon', 'gitlab-canceled')
-                    when stage.status is 'created'
-                        e.classList.add('icon', 'gitlab-created')
-                    when stage.status is 'manual'
-                        e.classList.add('icon', 'gitlab-manual')
+                e = document.createElement('a')
+                e.classList.add('icon', "gitlab-#{stage.status}")
+                if stage.firstFailedJob
+                  e.href = "#{server}/#{project}/-/jobs/#{stage.firstFailedJob.id}"
                 @tooltips.push atom.tooltips.add e, {
                     title: "#{stage.name}: #{stage.status}"
                 }

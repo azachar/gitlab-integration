@@ -151,26 +151,27 @@ class GitlabStatus
                         if not stage?
                             stage =
                                 name: job.stage
-                                status: 'success'
+                                pipeline: pipeline.id
+                                status: 'created'
                                 jobs: []
                             stages = stages.concat([stage])
                         stage.jobs = stage.jobs.concat([job])
                         return stages
                 , []).map((stage) ->
                     Object.assign(stage, {
+                        firstFailedJob: stage.jobs
+                            .filter( (job) ->  job.status is 'failed' )?[0]
+
                         status: stage.jobs
                             .sort((a, b) -> b.id - a.id)
                             .reduce((status, job) ->
-                                switch
-                                    when job.status is 'pending' then 'pending'
-                                    when job.status is 'created' then 'created'
-                                    when job.status is 'canceled' then 'canceled'
-                                    when job.status is 'running' then 'running'
-                                    when job.status is 'skipped' then 'skipped'
-                                    when job.status is 'failed' and
-                                        status is 'success' then 'failed'
-                                    else status
-                            , 'success')
+                                switch status
+                                    when 'failed' then 'failed'
+                                    when 'pending' then 'pending'
+                                    when 'manual' then 'manual'
+                                    when 'running' then 'running'
+                                    else job.status
+                            , 'created')
                     })
                 ))
         ).catch((error) =>
