@@ -106,7 +106,7 @@ class StatusBarView extends HTMLElement
             @controller.openAllPipelineSelector(project);
           status.appendChild allPipeline
 
-          first3pipelines = pipelines[..4]
+          first3pipelines = pipelines[..3]
           first3pipelines.forEach((pipeline) =>
               pipe = document.createElement('a')
               pipe.classList.add('icon', "gitlab-#{pipeline.status}")
@@ -179,6 +179,16 @@ class StatusBarView extends HTMLElement
                       @controller.openLogs(project, runningJobs);
                   @tooltips.push atom.tooltips.add e, {
                       title: "Download all running logs (#{runningJobs.length}) from the stage #{stage.name}"
+                  }
+                  status.appendChild e
+
+                if stage.jobs.length > 0 and stage.name is 'test'
+                  e = document.createElement('a')
+                  e.classList.add('icon', 'icon-cloud-download', 'text-subtle')
+                  e.onclick =  (e) =>
+                      @controller.openLogs(project, stage.jobs);
+                  @tooltips.push atom.tooltips.add e, {
+                      title: "Download all logs (#{stage.jobs.length}) from the stage #{stage.name}"
                   }
                   status.appendChild e
             )
