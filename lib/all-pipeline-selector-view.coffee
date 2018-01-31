@@ -172,4 +172,11 @@ class AllPipelineSelectorView extends SelectListView
   cancelled: ->
     @panel.hide()
 
+  cancel: ->
+    super
+    @controller.activeSelector = null
+
+  refresh: ->
+    @setItems @items
+
 module.exports = AllPipelineSelectorView

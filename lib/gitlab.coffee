@@ -6,7 +6,7 @@ PipelineSelectorView = require './pipeline-selector-view'
 AllPipelineSelectorView = require './all-pipeline-selector-view'
 
 class GitlabStatus
-  constructor: (@view, @timeout=null, @projects={}, @pending=[], @jobs={}) ->
+  constructor: (@view, @timeout=null, @projects={}, @pending=[], @jobs={}, @allPipelines={}) ->
     @token = atom.config.get('gitlab-integration.token')
     @artifactReportPath = atom.config.get('gitlab-integration.artifactReportPath')
     @period = atom.config.get('gitlab-integration.period')
@@ -227,13 +227,18 @@ class GitlabStatus
       @openGitlabCICD(projectPath)
 
   openJobSelector: (projectPath, stage) ->
-    selector = new JobSelectorView(stage.jobs, @ , projectPath)
+    @activeSelector = new JobSelectorView(stage.jobs, @ , projectPath)
 
   openPipelineSelector: (projectPath) ->
     { host, project, repos } = @projects[projectPath]
-    selector = new PipelineSelectorView(project.pipelines, @ , projectPath)
+    @activeSelector = new PipelineSelectorView(project.pipelines, @ , projectPath)
 
   openAllPipelineSelector: (projectPath) ->
+    pipelines = @allPipelines[projectPath]
+    if pipelines?.length > 0
+      @activeSelector = new AllPipelineSelectorView(pipelines, @ , projectPath)
+
+  loadAllPipelines: (projectPath) ->
     { host, project, repos } = @projects[projectPath]
     @fetch(host, "projects/#{project.id}/pipelines")
     .then( (pipelines) =>
@@ -244,8 +249,9 @@ class GitlabStatus
       )
     )
     .then( (pipelines) =>
-      selector = new AllPipelineSelectorView(pipelines, @ , projectPath)
+      @allPipelines[projectPath] = pipelines
     )
+
   schedule: ->
     @timeout = setTimeout @update.bind(@), @period
 
@@ -290,7 +296,11 @@ class GitlabStatus
                 @loadPipelineJobs(host, project, pipeline) for pipeline in pipelines
               else
                 @onJobs(project, [])
-          ).catch((error) =>
+          )
+          .then( ()=>
+            @loadAllPipelines(projectPath)
+          )
+          .catch((error) =>
             console.error "cannot fetch pipelines for project #{projectPath}", error
             @endUpdate(project)
           )
@@ -298,6 +308,7 @@ class GitlabStatus
 
   endUpdate: (project) ->
     log "project #{project} update end"
+    @activeSelector?.refresh()
     @updating[project] = false
     @pending = @pending.filter((pending) => pending isnt project)
     if @pending.length is 0
