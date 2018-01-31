@@ -6,13 +6,13 @@ class JobSelectorView extends SelectListView
   initialize: (jobs, controller, projectPath) ->
     super
 
-    @jobs = jobs
+    @jobs = @doSortByDate jobs
     @controller = controller
     @projectPath = projectPath
     {@alwaysSuccess, @unstable, @alwaysFailed, @total} = @controller.statistics(@jobs)
     @addClass('overlay from-top')
-    @calculate jobs
-    @setItems jobs
+    @calculate @jobs
+    @setItems @jobs
     @panel ?= atom.workspace.addModalPanel(item: this)
     @focusFilterEditor()
     $$(@extraContent(@)).insertBefore(@error)
@@ -51,6 +51,13 @@ class JobSelectorView extends SelectListView
             @button outlet: 'sortByDate', class: 'btn', ' Sort by date'
             @button outlet: 'sortByDuration', class: 'btn', ' Sort by duration'
 
+  doSortByDate: (items) ->
+    items.sort (a, b) ->
+      if a.created_at and b.created_at
+        return moment(b.created_at).diff(moment(a.created_at))
+      else
+        return 0
+
   handleEvents: ->
     @wireOutlets(@)
 
@@ -79,11 +86,7 @@ class JobSelectorView extends SelectListView
         return a.id - b.id
 
     @sortByDate.on 'mouseover', (e) =>
-      @setItems @items.sort (a, b) ->
-        if a.created_at and b.created_at
-          return moment(b.created_at).diff(moment(a.created_at))
-        else
-          return 0
+      @setItems @doSortByDate @items
 
     @sortByDuration.on 'mouseover', (e) =>
       @setItems @items.sort (a, b) ->

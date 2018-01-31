@@ -11,13 +11,13 @@ class PipelineSelectorView extends SelectListView
   initialize: (pipelines, controller, projectPath) ->
     super
 
-    @pipelines = pipelines
+    @pipelines = @doSortByDate pipelines
     @controller = controller
     @projectPath = projectPath
 
     @addClass('overlay from-top')
-    @calculate pipelines
-    @setItems pipelines
+    @calculate @pipelines
+    @setItems @pipelines
     @panel ?= atom.workspace.addModalPanel(item: this)
     @focusFilterEditor()
     $$(@extraContent(@)).insertBefore(@error)
@@ -73,6 +73,13 @@ class PipelineSelectorView extends SelectListView
             @button outlet: 'sortByDate', class: 'btn', ' Sort by date'
             @button outlet: 'sortByDuration', class: 'btn', ' Sort by duration'
 
+  doSortByDate: (items) ->
+    items.sort (a, b) ->
+      if a.created_at and b.created_at
+        return moment(b.created_at).diff(moment(a.created_at))
+      else
+        return 0
+
   handleEvents: ->
     @wireOutlets(@)
 
@@ -87,11 +94,7 @@ class PipelineSelectorView extends SelectListView
         return 0
 
     @sortByDate.on 'mouseover', (e) =>
-      @setItems @items.sort (a, b) ->
-        if a.created_at and b.created_at
-          return moment(b.created_at).diff(moment(a.created_at))
-        else
-          return 0
+      @setItems @doSortByDate @items
 
     @sortByDuration.on 'mouseover', (e) =>
       @setItems @items.sort (a, b) ->
@@ -186,5 +189,13 @@ class PipelineSelectorView extends SelectListView
 
   cancelled: ->
     @panel.hide()
+
+  cancel: ->
+    super
+    @controller.activeSelector = null
+
+  refresh: ->
+    @setItems @items
+
 
 module.exports = PipelineSelectorView
