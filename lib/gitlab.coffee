@@ -108,7 +108,13 @@ class GitlabStatus
       )
 
   printHeader: (job) ->
-    "[0K[32;1m Log from branch #{job.ref} | job  #{job.name} | #  #{job.id} | pipeline  #{job.pipeline.id} [0;m"
+    color =  switch job.status
+        when 'failed' then '33m'
+        when 'pending' then '38m'
+        when 'success' then '32m'
+        when 'running' then '36m'
+        else '34m'
+    return "[0K[#{color} == LOG ==  Job: #{job.name} / ##{job.id} (#{job.status}) | #{job.commit?.title} (#{job.ref}) | Pipeline: ##{job.pipeline.id} (#{job.pipeline.status})[0;m"
 
   loadJob: (host, project, job) ->
     atom.notifications.addInfo(
