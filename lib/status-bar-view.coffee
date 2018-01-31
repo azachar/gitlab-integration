@@ -7,6 +7,7 @@ class StatusBarView extends HTMLElement
         @activate()
         @currentProject = null
         @stages = {}
+        @pipelines = {}
         @statuses = {}
         @tooltips = []
         @controller = null
@@ -38,18 +39,20 @@ class StatusBarView extends HTMLElement
         log "current project becomes #{project}"
         @currentProject = project
         if project?
-            if @stages[project]?
-                @update(project, @stages[project])
+            if @stages[project]? or @pipelines[project]?
+                @update(project, @stages[project], @pipelines[project])
             else if @statuses[project]?
                 @loading(project, @statuses[project])
             else
                 @unknown(project)
 
-    onStagesUpdate: (stages) =>
-        log "new stages", stages
-        @stages = stages
-        if @stages[@currentProject]?
-            @update(@currentProject, @stages[@currentProject])
+    onDataUpdate: (stages, pipelines) =>
+        log "new data", stages
+        if stages
+          @stages = stages
+        if pipelines
+          @pipelines = pipelines
+        @update(@currentProject, @stages[@currentProject], @pipelines[@currentProject])
 
     disposeTooltips: =>
         @tooltips.forEach((tooltip) => tooltip.dispose())
@@ -85,12 +88,38 @@ class StatusBarView extends HTMLElement
         else
             @appendChild child
 
-    update: (project, stages) =>
+    update: (project, stages, pipelines) =>
         log "updating stages of project #{project} with", stages
         @show()
         @disposeTooltips()
         status = document.createElement('div')
         status.classList.add('inline-block')
+
+        if pipelines?.length > 0
+
+          allPipeline = document.createElement('span')
+          allPipeline.classList.add('icon', 'icon-inbox')
+          @tooltips.push atom.tooltips.add allPipeline, {
+            title: "Open all pipeline selector"
+          }
+          allPipeline.onclick = (e) =>
+            @controller.openAllPipelineSelector(project);
+          status.appendChild allPipeline
+
+          first3pipelines = pipelines[..4]
+          first3pipelines.forEach((pipeline) =>
+              pipe = document.createElement('a')
+              pipe.classList.add('icon', "gitlab-#{pipeline.status}")
+              if stages.length > 0 and stages[0].pipeline is pipeline.id
+                pipe.innerHTML = "*&nbsp;"
+              pipe.onclick =  (e) =>
+                @controller.updatePipeline(pipeline, project);
+              @tooltips.push atom.tooltips.add pipe, {
+                  title: "##{pipeline.id} | #{pipeline.ref} | #{pipeline.commit?.title}"
+              }
+              status.appendChild pipe
+          )
+
         icon = document.createElement('a')
         icon.classList.add('icon', 'icon-gitlab')
         icon.onclick =  (e) =>
@@ -110,27 +139,19 @@ class StatusBarView extends HTMLElement
             icon.onclick =  (e) =>
                 @controller.openPipeline(project, stages);
 
-            allPipeline = document.createElement('span')
-            allPipeline.classList.add('icon', 'icon-inbox')
-            @tooltips.push atom.tooltips.add allPipeline, {
-                title: "Open all pipeline selector"
-            }
-            allPipeline.onclick = (e) =>
-              @controller.openAllPipelineSelector(project);
-            status.appendChild allPipeline
-
             pipeline = document.createElement('span')
             pipeline.classList.add('icon', "gitlab-#{stages[0]?.pipelineStatus}")
-            pipeline.innerHTML = "#{stages[0]?.pipeline} &nbsp;"
+            pipeline.innerHTML = "=&nbsp;"
             pipeline.onclick = (e) =>
               @controller.openPipelineSelector(project);
             @tooltips.push atom.tooltips.add pipeline, {
-                title: "Open branch pipeline selector"
+                title: "#{stages[0]?.jobs[0]?.commit?.title} | #{stages[0]?.pipeline}"
             }
             status.appendChild pipeline
 
             stages.forEach((stage) =>
                 failedJobs =  stage.jobs.filter( (job) ->  job.status is 'failed' )
+                runningJobs =  stage.jobs.filter( (job) ->  job.status is 'running' )
 
                 e = document.createElement('a')
                 e.classList.add('icon', "gitlab-#{stage.status}")
@@ -144,9 +165,18 @@ class StatusBarView extends HTMLElement
                   e = document.createElement('a')
                   e.classList.add('icon', "gitlab-artifact")
                   e.onclick =  (e) =>
-                      @controller.openFailedLogs(project, stage.jobs);
+                      @controller.openLogs(project, failedJobs);
                   @tooltips.push atom.tooltips.add e, {
                       title: "Download all failed logs (#{failedJobs.length}) from the stage #{stage.name}"
+                  }
+                  status.appendChild e
+                if runningJobs.length > 0
+                  e = document.createElement('a')
+                  e.classList.add('icon', "icon-play")
+                  e.onclick =  (e) =>
+                      @controller.openLogs(project, runningJobs);
+                  @tooltips.push atom.tooltips.add e, {
+                      title: "Download all runnig logs (#{failedJobs.length}) from the stage #{stage.name}"
                   }
                   status.appendChild e
             )

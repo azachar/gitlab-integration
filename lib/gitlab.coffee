@@ -250,6 +250,8 @@ class GitlabStatus
     )
     .then( (pipelines) =>
       @allPipelines[projectPath] = pipelines
+      @view.onDataUpdate(null, @allPipelines)
+      return pipelines
     )
 
   schedule: ->
@@ -279,6 +281,7 @@ class GitlabStatus
             ref = ""
           if not @jobs[projectPath]?
             @view.loading(projectPath, "loading pipelines...")
+
           @fetch(host, "projects/#{project.id}/pipelines#{ref}").then(
             (pipelines) =>
               log "received pipelines from #{host}/#{project.id}", pipelines
@@ -308,12 +311,12 @@ class GitlabStatus
 
   endUpdate: (project) ->
     log "project #{project} update end"
-    @activeSelector?.refresh()
     @updating[project] = false
     @pending = @pending.filter((pending) => pending isnt project)
     if @pending.length is 0
-      @view.onStagesUpdate(@jobs)
       @schedule()
+      @view.onDataUpdate(@jobs, @allPipelines)
+      @activeSelector?.refresh()
     @jobs[project.path_with_namespace]
 
   updateJobs: (host, project, pipeline) ->
