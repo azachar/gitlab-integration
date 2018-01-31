@@ -161,22 +161,24 @@ class StatusBarView extends HTMLElement
                     title: "#{stage.name}: #{stage.status} | #{failedJobs.length} failed jobs out of #{stage.jobs.length} | Click to individually select a job's log to download."
                 }
                 status.appendChild e
+
                 if failedJobs.length > 0
                   e = document.createElement('a')
-                  e.classList.add('icon', "gitlab-artifact")
+                  e.classList.add('icon', 'icon-cloud-download', 'text-error')
                   e.onclick =  (e) =>
                       @controller.openLogs(project, failedJobs);
                   @tooltips.push atom.tooltips.add e, {
                       title: "Download all failed logs (#{failedJobs.length}) from the stage #{stage.name}"
                   }
                   status.appendChild e
+
                 if runningJobs.length > 0
                   e = document.createElement('a')
-                  e.classList.add('icon', "icon-play")
+                  e.classList.add('icon', 'icon-cloud-download', 'text-info')
                   e.onclick =  (e) =>
                       @controller.openLogs(project, runningJobs);
                   @tooltips.push atom.tooltips.add e, {
-                      title: "Download all runnig logs (#{failedJobs.length}) from the stage #{stage.name}"
+                      title: "Download all running logs (#{runningJobs.length}) from the stage #{stage.name}"
                   }
                   status.appendChild e
             )
