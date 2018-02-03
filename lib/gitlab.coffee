@@ -154,11 +154,10 @@ class GitlabStatus
       console.error "cannot open editor for the build log of #{projectPath} and job #{job.id}", error
     )
 
-  openFailedLogs: (projectPath, jobs) ->
-    @openLogs(projectPath, jobs.filter (job) -> job.status is 'failed')
-
-  openFailedLogsInGroup: (projectPath, jobs, mainJob) ->
-    @openFailedLogs(projectPath, jobs.filter (job) -> job.name is mainJob.name)
+  openFailedInGroup: (projectPath, jobs, mainJob) ->
+    failedInGroup = jobs.filter (job) -> job.name is mainJob.name and job.status is 'failed'
+    @openLogs(projectPath, failedInGroup)
+    @openReports(projectPath, failedInGroup)
 
   openLogs: (projectPath, jobs) ->
     { host, project, repos } = @projects[projectPath]
@@ -199,6 +198,10 @@ class GitlabStatus
       .catch((error) ->
         console.error "cannot open editor for build logs of jobs of #{projectPath}", error
       )
+
+  openReports: (projectPath, jobs) ->
+    jobs?.every (job) =>
+      @openReport(projectPath, job)
 
   openReport: (projectPath, job) ->
     if not job.artifacts_file

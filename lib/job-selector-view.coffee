@@ -124,21 +124,21 @@ class JobSelectorView extends SelectListView
     if job.artifacts_file
       atom.confirm
         message: 'What to open?'
-        detailedMessage: "Do you want to open the log or the report or both or all logs of the group #{job.name}?"
+        detailedMessage: "Do you want to open the log only or the report only or log and report or all logs and reports for jobs in the group #{job.name}?"
         buttons:
-          Group: => @controller.openFailedLogsInGroup(@projectPath, @items, job)
-          Log: => @controller.openLog(@projectPath, job)
-          Report: => @controller.openReport(@projectPath, job)
-          Both: =>
+          "All Logs + Reports in #{job.name}": => @controller.openFailedInGroup(@projectPath, @items, job)
+          "1 Log only": => @controller.openLog(@projectPath, job)
+          "1 Log and 1 Report": =>
             @controller.openLog(@projectPath, job)
             @controller.openReport(@projectPath, job)
+          "1 Report only": => @controller.openReport(@projectPath, job)
     else
       atom.confirm
         message: 'What to open?'
-        detailedMessage: "Do you want to open the log or all logs of the group #{job.name}?"
+        detailedMessage: "Do you want to open the log only or all logs and reports for jobs in the group #{job.name}?"
         buttons:
-          Group: => @controller.openFailedLogsInGroup(@projectPath, @items, job)
-          Log: => @controller.openLog(@projectPath, job)
+          "All Logs + Reports in #{job.name}": => @controller.openFailedInGroup(@projectPath, @items, job)
+          "1 Log only": => @controller.openLog(@projectPath, job)
 
   cancelled: ->
     @panel.hide()

@@ -89,6 +89,7 @@ class StatusBarView extends HTMLElement
             @appendChild child
 
     update: (project, stages, pipelines) =>
+        return unless stages
         log "updating stages of project #{project} with", stages
         @show()
         @disposeTooltips()
@@ -172,7 +173,14 @@ class StatusBarView extends HTMLElement
                   e = document.createElement('a')
                   e.classList.add('icon', 'icon-cloud-download', 'text-error')
                   e.onclick =  (e) =>
-                      @controller.openLogs(project, failedJobs);
+                      if e.metaKey or e.altKey
+                        if e.metaKey
+                          @controller.openReports(project, failedJobs);
+                        if e.altKey
+                          @controller.openLogs(project, failedJobs);
+                      else
+                        @controller.openLogs(project, failedJobs);
+
                   @tooltips.push atom.tooltips.add e, {
                       title: "Download all failed logs (#{failedJobs.length}) from the stage #{stage.name}"
                   }
@@ -192,7 +200,14 @@ class StatusBarView extends HTMLElement
                   e = document.createElement('a')
                   e.classList.add('icon', 'icon-cloud-download', 'text-subtle')
                   e.onclick =  (e) =>
-                      @controller.openLogs(project, stage.jobs);
+                      if e.metaKey or e.altKey
+                        if e.metaKey
+                          @controller.openReports(project, stage.jobs);
+                        if e.altKey
+                          @controller.openLogs(project, stage.jobs);
+                      else
+                        @controller.openLogs(project, stage.jobs);
+
                   @tooltips.push atom.tooltips.add e, {
                       title: "Download all logs (#{stage.jobs.length}) from the stage #{stage.name}"
                   }
