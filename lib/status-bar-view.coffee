@@ -94,6 +94,12 @@ class StatusBarView extends HTMLElement
         @disposeTooltips()
         status = document.createElement('div')
         status.classList.add('inline-block')
+        # workaround, the passed data needs to be refactored
+        # pass pipeline instead of hacked stages
+        if stages?.length > 0
+          firstStage = stages[0]
+          if firstStage.jobs?.length > 0
+            firstJob = firstStage.jobs[0]
 
         if pipelines?.length > 0
 
@@ -110,7 +116,7 @@ class StatusBarView extends HTMLElement
           first3pipelines.forEach((pipeline) =>
               pipe = document.createElement('a')
               pipe.classList.add('icon', "gitlab-#{pipeline.status}")
-              if stages.length > 0 and stages[0].pipeline is pipeline.id
+              if firstStage?.pipeline is pipeline.id
                 pipe.innerHTML = "*&nbsp;"
               pipe.onclick =  (e) =>
                 @controller.updatePipeline(pipeline, project);
@@ -125,7 +131,7 @@ class StatusBarView extends HTMLElement
         icon.onclick =  (e) =>
             @controller.openGitlabCICD(project);
         @tooltips.push atom.tooltips.add icon, {
-            title: "GitLab project #{project} #{stages[0]?.pipeline} on branch #{stages[0]?.jobs[0]?.ref}"
+            title: "GitLab project #{project} #{firstStage?.pipeline} on branch #{firstJob?.ref}"
         }
         status.appendChild icon
         if stages.length is 0
@@ -140,12 +146,12 @@ class StatusBarView extends HTMLElement
                 @controller.openPipeline(project, stages);
 
             pipeline = document.createElement('span')
-            pipeline.classList.add('icon', "gitlab-#{stages[0]?.pipelineStatus}")
+            pipeline.classList.add('icon', "gitlab-#{firstStage?.pipelineStatus}")
             pipeline.innerHTML = "=&nbsp;"
             pipeline.onclick = (e) =>
               @controller.openPipelineSelector(project);
             @tooltips.push atom.tooltips.add pipeline, {
-                title: "#{stages[0]?.jobs[0]?.commit?.title} | #{stages[0]?.pipeline}"
+                title: "#{firstJob?.commit?.title} | #{firstStage?.pipeline}"
             }
             status.appendChild pipeline
 
